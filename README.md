@@ -1,151 +1,155 @@
-## Sobre o Projeto
+# GoodWe AI Assistant - Sprint 03
 
-O GoodWe AI Assistant é um chatbot desenvolvido para o EV Challenge 2026 da FIAP em parceria com a GoodWe.
+Refatoração do chatbot do EV Challenge 2026 para um pipeline de agentes com
+LangGraph, memória por sessão, guardrails e avaliação reproduzível de modelos.
 
-A solução foi projetada para atuar como um assistente virtual especializado nas plataformas:
+O relatório final da entrega está em `docs/Relatorio_Evolucao_GoodWe_Sprint03.pdf`.
 
-- ChargeGrid Intelligence
-- EV ChargeOps
+## Integrantes
 
-O objetivo é fornecer respostas contextualizadas sobre infraestrutura de carregamento para veículos elétricos, modos inteligentes de carregamento e gerenciamento operacional de estações de recarga.
+| Integrante | RM | Responsabilidade principal |
+|---|---:|---|
+| Pedro Henriue Izidoro Andreaza | 571107 | Integração, documentação e relatório de evolução |
+| Eduardo Oliveira Reis | 569727 | Arquitetura do agente e memória |
+| Felipe Alves Canazza | 572470 | Comparação de modelos e parametrização |
+| Caio Eguia Ceschini | 570798 | Segurança, guardrails e testes |
 
----
+> Ajuste a divisão acima se ela não representar o trabalho real da equipe.
 
-## Problema Abordado
+## Evolução da Sprint 2
 
-O desafio proposto pela GoodWe envolve a necessidade de soluções inteligentes para gerenciamento de carregadores de veículos elétricos.
+| Aspecto | Sprint 2 | Sprint 3 |
+|---|---|---|
+| Orquestração | Script linear | Grafo `guardrail -> modelo/recusa` |
+| Memória | Lista global manual | `InMemorySaver` nativo, separado por `thread_id` |
+| Modelos | `llama3` fixo | Qwen 2.5 3B selecionado após benchmark de 2 modelos |
+| Segurança | Instrução no prompt | Filtro determinístico + prompt de defesa em profundidade |
+| Testes | Ausentes | 11 testes automatizados |
+| Evidências | README descritivo | Casos versionados, JSON bruto e relatório Markdown |
 
-Entre os principais problemas estão:
+## Arquitetura
 
-- Orquestração eficiente da potência disponível.
-- Integração com sistemas fotovoltaicos.
-- Monitoramento operacional dos carregadores.
-- Gestão compartilhada de infraestrutura de recarga.
-- Suporte aos usuários e operadores da plataforma.
+```text
+Usuário + session_id
+        |
+        v
+  [Guardrail determinístico]
+        | permitido             | bloqueado
+        v                       v
+  [LLM via Ollama]        [Recusa segura]
+        |                       |
+        +----------+------------+
+                   v
+       [Checkpoint LangGraph por sessão]
+```
 
-O chatbot foi desenvolvido para auxiliar na disseminação dessas informações de forma rápida e acessível.
+O guardrail é executado antes do modelo, evitando custo e exposição desnecessários.
+O prompt de sistema adiciona uma segunda camada contra alucinação e quebra de escopo.
 
----
+## Requisitos
 
-## Tecnologias Utilizadas
-### Linguagem
-- Python 3.11+
-### Modelo de IA
-- Llama 3
-### Runtime Local
-- Ollama
-### Técnicas Aplicadas
-- System Prompting
-- Few-Shot Prompting
-- Context Injection
-- Conversational Memory
+- Python 3.11 ou superior
+- [Ollama](https://ollama.com/)
+- Aproximadamente 5 GB livres para os dois modelos de avaliação
 
----
-
-## Arquitetura da Solução
-
-Fluxo de funcionamento:
-
-1. Usuário envia uma pergunta.
-2. A pergunta é adicionada ao histórico da conversa.
-3. O histórico é enviado ao modelo Llama 3 através do Ollama.
-4. O modelo gera uma resposta considerando:
-    - Contexto GoodWe
-    - Histórico da conversa
-    - Exemplos Few-Shot
-5. A resposta é retornada ao usuário.
-6. O histórico é atualizado para manter a continuidade do diálogo.
-
----
-
-## Funcionalidades
-### ChargeGrid Intelligence
-
-O chatbot pode responder perguntas relacionadas a:
-
-- PV Priority
-- PV + Battery
-- Fast Charging
-- Integração com energia solar
-- Autoconsumo energético
-
-## EV ChargeOps
-
-O chatbot pode responder perguntas relacionadas a:
-
-- Monitoramento de carregadores
-- Gestão de infraestrutura
-- Controle operacional
-- Uso compartilhado
-- Gerenciamento de carga
-
-## Restrição de Escopo
-
-Perguntas fora do contexto GoodWe são recusadas de forma educada para garantir aderência ao escopo definido no desafio.
-
----
+Nenhuma chave de API é necessária. Não versionar arquivos `.env` ou credenciais.
 
 ## Instalação
-### 1. Instalar o Ollama
-
-Instale o Ollama em:
-
-https://ollama.com
-
----
-
-### 2. Baixar o modelo
-
-Após instalar o Ollama:
 
 ```bash
-ollama pull llama3
-```
-
----
-
-### 3. Clonar o projeto
-
-```bash
-git clone <url-do-repositorio>
-cd goodwe-ai-assistant
-```
-
----
-
-### 4. Criar ambiente virtual
-
-```bash
+git clone <URL-DO-REPOSITORIO-DA-SPRINT-03>
+cd ChatbotGoodWe-FIAP-Sprint03
 python -m venv .venv
 ```
 
 Windows:
 
-```bash
-.venv\Scripts\activate
+```powershell
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
 ```
 
-Linux/Mac:
-```
+Linux/macOS:
+
+```bash
 source .venv/bin/activate
+python -m pip install -r requirements.txt
+cp .env.example .env
 ```
 
----
+## Execução do chatbot
 
-### 5. Instalar dependências
 ```bash
-pip install -r requirements.txt
+ollama pull qwen2.5:3b
+python main.py --session-id demonstracao
 ```
 
----
+Para demonstrar a memória em mais de três turnos, use a mesma sessão:
 
-## Execução
+1. `Explique o PV Priority do ChargeGrid.`
+2. `E como ele ajuda no autoconsumo?`
+3. `Compare isso ao EV ChargeOps.`
+4. `Continue com mais detalhes.`
 
-Certifique-se de que o Ollama esteja em execução.
+## Testes
 
-Execute:
 ```bash
-python main.py
+python -m pytest -q
 ```
 
----
+Resultado verificado nesta versão: **11 testes aprovados**. A matriz de segurança
+está em `docs/TESTES_SEGURANCA.md`.
+
+## Comparação entre modelos
+
+```bash
+ollama pull llama3.2:3b
+ollama pull qwen2.5:3b
+python scripts/compare_models.py
+```
+
+Parâmetros controlados: temperatura `0.2`, `top_p=0.9` e máximo de `350` tokens.
+O script executou os mesmos sete casos nos dois modelos e criou:
+
+- `results/model_comparison.json`: entradas, respostas, latências, erros e notas;
+- `results/relatorio_modelos.md`: tabela comparativa e seleção justificada.
+
+Resultado: o `qwen2.5:3b` obteve **95,2%** e **7,332 s** de latência média;
+o `llama3.2:3b` obteve **85,7%** e **10,427 s**. O Qwen foi selecionado porque
+teve melhor nota, menor latência e, na revisão humana, evitou inventar preços e
+garantias. Os dados brutos e as respostas completas estão versionados em `results/`.
+
+## Configuração
+
+| Variável | Padrão | Função |
+|---|---|---|
+| `OLLAMA_BASE_URL` | `http://localhost:11434` | Endpoint local do Ollama |
+| `OLLAMA_MODEL` | `qwen2.5:3b` | Modelo selecionado pelo benchmark |
+| `OLLAMA_TEMPERATURE` | `0.2` | Variação das respostas |
+| `OLLAMA_TOP_P` | `0.9` | Amostragem cumulativa |
+| `OLLAMA_NUM_PREDICT` | `350` | Limite de geração |
+
+## Estrutura
+
+```text
+goodwe_agent/          núcleo do agente, prompt e guardrails
+evaluation/cases.json casos de avaliação versionados
+scripts/               comparador de modelos
+tests/                 testes automatizados
+docs/                  evidências e relatórios
+main.py                ponto de entrada
+```
+
+## Limitações e próximos passos
+
+- `InMemorySaver` preserva a conversa durante o processo; persistência após reinício
+  pode ser adicionada com checkpointer SQLite/PostgreSQL.
+- Filtros por padrões não substituem monitoramento contínuo e novos testes adversariais.
+- Informações comerciais e especificações devem ser confirmadas nos canais oficiais.
+
+## Integridade acadêmica
+
+A IA apoiou a refatoração e a documentação. A equipe deve compreender o código,
+executar a comparação no próprio ambiente, revisar as respostas e manter commits
+individuais e regulares no repositório público.
