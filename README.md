@@ -57,7 +57,7 @@ Nenhuma chave de API é necessária. Não versionar arquivos `.env` ou credencia
 ## Instalação
 
 ```bash
-git clone <URL-DO-REPOSITORIO-DA-SPRINT-03>
+git clone --branch sprint-03 https://github.com/2pedrohenrique/ChatbotGoodWe-FIAP-Sprint02.git
 cd ChatbotGoodWe-FIAP-Sprint03
 python -m venv .venv
 ```
