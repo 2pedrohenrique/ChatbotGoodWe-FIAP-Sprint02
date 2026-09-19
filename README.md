@@ -14,8 +14,6 @@ O relatório final da entrega está em `docs/Relatorio_Evolucao_GoodWe_Sprint03.
 | Felipe Alves Canazza | 572470 | Comparação de modelos e parametrização |
 | Caio Eguia Ceschini | 570798 | Segurança, guardrails e testes |
 
-> Ajuste a divisão acima se ela não representar o trabalho real da equipe.
-
 ## Evolução da Sprint 2
 
 | Aspecto | Sprint 2 | Sprint 3 |
